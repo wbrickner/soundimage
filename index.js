@@ -1,65 +1,37 @@
-const fs = require("fs-extra")
-,     WAVDecoder = require("wav-decoder")
-,     FFT = require("fft.js")
-,     nanoid = require("nanoid")
-,     imageEncoder = require("image-encode")
+#!/usr/bin/env node
 
-function padToFactorOfWindowSize(audio, windowSize) {
-    const windowCount = Math.ceil(audio.channelData[0].length / windowSize)
-    ,     finalLength = windowSize * windowCount
+const program = require("commander")
+,     path = require("path")
+,     SoundImage = require("./core")
 
-    for (var j = audio.channelData[0].length; j < finalLength; ++j) {
-        audio.channelData[0][j] = 0
-    }
+program.version("1.0.0", "-v, --version")
+        .usage("[options] ./audio.wav")
+        .option("-r, --resolution [n]", "Set vertical resolution (must be a power of two). This necessarily decreases horizontal resolution proportionately", parseInt)
+        .option("-o, --output [path]", "Filename of the output (random otherwise)")
+        .option("-f, --format [format]", `Output format (can be "png", "gif", "tif", "bmp", or "jpg")`)
+        .option("-d, --debug", "Log detailed errors")
+        // .option("-h, --help", "Output usage information")
+        .parse(process.argv)
 
-    return windowCount
-}
+const options = { }
 
-async function loadAndDecodeWAV(absoluteWAVPath) {
-    let buffer = await fs.readFile(absoluteWAVPath)
-    ,   audio = await WAVDecoder.decode(buffer)
+if (program.resolution) { options.sliceSize = program.resolution }
+if (program.output) { options.outputPath = program.output }
+if (program.format) { options.format = program.format }
 
-    return audio
-}
+let inputPath
+if (path.isAbsolute(program.args[0])) { inputPath = program.args[0] }
+else { inputPath = path.join(".", program.args[0]) }
 
-async function writeImage(fileName, image, format, width, height) {
-    return (
-        fs.writeFile(fileName, Buffer.from( imageEncoder(image, format, { width, height }) ))
-    )
-}
+console.info("Generating image...")
 
-module.exports = async function SoundImage(absoluteInputPath, options = {}) {
-    let audio = await loadAndDecodeWAV(absoluteInputPath)
-
-    const kWindowSize = options.sliceSize || 256
-    ,     imageHeight = 2 * kWindowSize
-    ,     windowCount = padToFactorOfWindowSize(audio, kWindowSize)
-    ,     sampleCount = windowCount * kWindowSize
-
-    const transform = new FFT(kWindowSize)
-    ,     out = transform.createComplexArray()
-
-    // 4 channels, at 8 bit color depth.s
-    const image = new Uint8ClampedArray(4 * imageHeight * windowCount)
-
-    let x = 0
-
-    for (var offset = 0; offset < sampleCount; offset += kWindowSize) {
-        // prepare input and perform transform
-        // TODO: don't re-create array, use the same array and overwrite contents
-        const realInput = audio.channelData[0].slice(offset, offset + kWindowSize)
-        transform.realTransform(out, realInput)
-
-        // write into the image
-        for (var y = 0; y < imageHeight; ++y) {
-            image[4 * (x + (y * windowCount)) + 0] = 
-            image[4 * (x + (y * windowCount)) + 1] = 
-            image[4 * (x + (y * windowCount)) + 2] = 255 * out[imageHeight - y]
-            image[4 * (x + (y * windowCount)) + 3] = 255
-        }
-        
-        ++x
-    }
-
-    await writeImage(options.outputPath || `${nanoid(12)}.png`, image, options.format || "png", windowCount, imageHeight)
-}
+SoundImage(inputPath, options)
+    .then(filename => {
+        if (options.output) { return }
+        console.log("Output:", filename)
+    })
+    .catch(err => {
+        console.error("Error occurred! Check program usage, or open an issue.")
+        if (program.debug) { console.error("Details:", err) }
+        program.help()
+    })

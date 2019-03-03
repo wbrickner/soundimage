@@ -19,9 +19,15 @@ This project requires a (recent) version of Node.js.
 # Usage
 
 ```shell
-./index.js -v             # Display version information
-           -r <Integer>   # Set vertical resolution (this necessarily decreases horizontal resolution proportionately)
-           ./audio.wav    # Audio input
+Usage: index [options] ./audio.wav
+
+Options:
+  -v, --version          output the version number
+  -r, --resolution [n]   Set vertical resolution (must be a power of two). This necessarily decreases horizontal resolution proportionately
+  -o, --output [path]    Filename of the output (random otherwise)
+  -f, --format [format]  Output format (can be "png", "gif", "tif", "bmp", or "jpg")
+  -d, --debug            Log detailed errors
+  -h, --help             output usage information
 ```
 
 # Example output
