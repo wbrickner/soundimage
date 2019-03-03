@@ -19,7 +19,7 @@ This project requires a (recent) version of Node.js.
 # Usage
 
 ```shell
-Usage: index [options] ./audio.wav
+Usage: index.js [options] ./audio.wav
 
 Options:
   -v, --version          output the version number
@@ -27,7 +27,7 @@ Options:
   -o, --output [path]    Filename of the output (random otherwise)
   -f, --format [format]  Output format (can be "png", "gif", "tif", "bmp", or "jpg")
   -d, --debug            Log detailed errors
-  -h, --help             output usage information
+  -h, --help             Output usage information
 ```
 
 # Example output
