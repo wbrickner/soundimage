@@ -29,6 +29,12 @@ async function writeImage(fileName, image, format, width, height) {
     )
 }
 
+function copyOnto(source, dest, start, endExclusive) {
+    for (var j = start, k = 0; j < endExclusive; ++j, ++k) {
+        dest[k] = source[j]
+    }
+}
+
 module.exports = async function SoundImage(absoluteInputPath, options = {}) {
     let audio = await loadAndDecodeWAV(absoluteInputPath)
 
@@ -40,15 +46,15 @@ module.exports = async function SoundImage(absoluteInputPath, options = {}) {
     const transform = new FFT(kWindowSize)
     ,     out = transform.createComplexArray()
 
-    // 4 channels, at 8 bit color depth.s
+    // 4 channels, at 8 bit color depth.
     const image = new Uint8ClampedArray(4 * imageHeight * windowCount)
 
     let x = 0
+    const realInput = []
 
     for (var offset = 0; offset < sampleCount; offset += kWindowSize) {
         // prepare input and perform transform
-        // TODO: don't re-create array, use the same array and overwrite contents
-        const realInput = audio.channelData[0].slice(offset, offset + kWindowSize)
+        copyOnto(audio.channelData[0], realInput, offset, offset + kWindowSize)
         transform.realTransform(out, realInput)
 
         // write into the image
